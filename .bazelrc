@@ -92,6 +92,9 @@ build --strategy=Javac=worker
 build --strategy=Scalac=worker
 build --worker_sandboxing
 
+build --per_file_copt='//c-toxcore[:/]@-nostdinc,-Wno-incompatible-library-redeclaration'
+build --per_file_copt='//third_party/libc[:/]@-nostdinc,-Wno-incompatible-library-redeclaration'
+
 build:libc++ --cxxopt='-stdlib=libc++'
 build:libc++ --linkopt='-stdlib=libc++'
 
