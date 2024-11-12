@@ -16,6 +16,11 @@ load("//third_party:nixpkgs.bzl", "QT_VERSION")
 
 def _qt_uic_impl(ctx):
     uic = ctx.executable._uic
+    qt_core = ctx.attr._qt_core
+    libs = [lib.dynamic_library for li in qt_core[CcInfo].linking_context.linker_inputs.to_list() for lib in li.libraries]
+    ld_library_paths = {}
+    for lib in libs:
+        ld_library_paths[lib.dirname] = True
 
     srcs = [src for tgt in ctx.attr.srcs for src in tgt.files.to_list()]
     outs = []
@@ -31,11 +36,14 @@ def _qt_uic_impl(ctx):
                 hdr.path,
             ],
             executable = uic.path,
-            inputs = [src],
+            inputs = [src] + libs,
             mnemonic = "CompileUIC",
             outputs = [hdr],
             progress_message = "Generating Qt UI header for " + src.basename,
             tools = [uic],
+            env = {
+                "LD_LIBRARY_PATH": ":".join(ld_library_paths.keys()),
+            },
         )
 
     return DefaultInfo(files = depset(outs))
@@ -51,6 +59,11 @@ qt_uic = rule(
             executable = True,
             cfg = "exec",
             allow_single_file = True,
+        ),
+        "_qt_core": attr.label(
+            default = Label("@qt//:qt_core"),
+            executable = False,
+            cfg = "exec",
         ),
     },
     output_to_genfiles = True,
